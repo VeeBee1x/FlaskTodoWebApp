@@ -62,7 +62,7 @@ def profile():
     
     recent_activities = ActivityLog.query.filter(
         ActivityLog.user_id == current_user.id,
-        ActivityLog.timestamp >= datetime.utcnow() - timedelta(days=7)
+        ActivityLog.timestamp >= datetime.now(timezone.utc) - timedelta(minutes=10)
     ).order_by(ActivityLog.timestamp.desc()).all()
 
     return render_template("main/profile.html", 
@@ -75,7 +75,7 @@ def profile():
 def history():
     recent_activities = ActivityLog.query.filter(
         ActivityLog.user_id == current_user.id,
-        ActivityLog.timestamp >= datetime.utcnow() - timedelta(days=7)
+        ActivityLog.timestamp >= datetime.now(timezone.utc) - timedelta(minutes=10)
     ).order_by(ActivityLog.timestamp.desc()).all()
 
     return render_template("main/history.html", 
@@ -413,7 +413,7 @@ def update_shared_task(task_id):
     task.description = description
     task.priority = priority
     task.completed = completed
-    task.updated_at = datetime.utcnow()
+    task.updated_at = datetime.now(timezone.utc)
     
     db.session.commit()
     
