@@ -162,204 +162,147 @@
 
 {% block scripts %}
 <script>
-    // Add this code to the script block in dashboard.html
 document.addEventListener('DOMContentLoaded', function() {
-    // Get all task checkboxes
+    // ✅ TASK COMPLETION CHECKBOXES
     const taskCheckboxes = document.querySelectorAll('.task-item input[type="checkbox"]');
     
-    // Add event listener to each checkbox
     taskCheckboxes.forEach(checkbox => {
-      checkbox.addEventListener('change', function() {
-        const taskId = this.dataset.taskId;
-        const taskItem = this.closest('.task-item');
-        const taskTitle = taskItem.querySelector('h3');
-        
-        if (this.checked) {
-          // Handle task completion
-          markTaskAsCompleted(taskId, taskItem, taskTitle);
-        } else {
-          // Handle task uncompleting
-          confirmUncompleteTask(taskId, taskItem, taskTitle, this);
-        }
-      });
+        checkbox.addEventListener('change', function() {
+            const taskId = this.dataset.taskId;
+            const taskItem = this.closest('.task-item');
+            const taskTitle = taskItem.querySelector('h3');
+            
+            if (this.checked) {
+                markTaskAsCompleted(taskId, taskItem, taskTitle);
+            } else {
+                confirmUncompleteTask(taskId, taskItem, taskTitle, this);
+            }
+        });
     });
-  });
-  
-  // Function to mark task as completed
-  function markTaskAsCompleted(taskId, taskItem, taskTitle) {
-    // Send AJAX request to mark task as completed
-    fetch(`/task/complete/${taskId}`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      }
-    })
-    .then(response => {
-      if (response.ok) {
-        // Update UI to show completed status
-        taskItem.classList.add('bg-gray-700/50');
-        taskItem.classList.remove('bg-gray-700');
-        taskTitle.classList.add('line-through', 'text-gray-400');
-        
-        // Show success message
-        showNotification('Task marked as completed!', 'success');
-      } else {
-        throw new Error('Failed to update task');
-      }
-    })
-    .catch(error => {
-      console.error('Error:', error);
-      showNotification('Error updating task', 'error');
-    });
-  }
-  
-  // Function to confirm and handle uncompleting a task
-  function confirmUncompleteTask(taskId, taskItem, taskTitle, checkbox) {
-    // Create confirmation dialog
-    if (confirm('Are you sure you want to mark this task as not completed?')) {
-      // Send AJAX request to mark task as not completed
-      fetch(`/task/uncomplete/${taskId}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        }
-      })
-      .then(response => {
-        if (response.ok) {
-          // Update UI to show active status
-          taskItem.classList.remove('bg-gray-700/50');
-          taskItem.classList.add('bg-gray-700');
-          taskTitle.classList.remove('line-through', 'text-gray-400');
-          
-          // Show success message
-          showNotification('Task marked as not completed', 'success');
-        } else {
-          // Recheck the checkbox if there was an error
-          checkbox.checked = true;
-          throw new Error('Failed to update task');
-        }
-      })
-      .catch(error => {
-        console.error('Error:', error);
-        showNotification('Error updating task', 'error');
-        // Recheck the checkbox
-        checkbox.checked = true;
-      });
-    } else {
-      // If user cancels, revert the checkbox
-      checkbox.checked = true;
-    }
-  }
-  
-  // Helper function to show notifications
-  function showNotification(message, type) {
-    // You can improve this to use a toast notification system
-    // For now, we'll just use flash messages or console
-    console.log(`${type}: ${message}`);
-  }
 
-    // Share Task Modal
-document.addEventListener('DOMContentLoaded', function() {
-    // Handle task completion checkboxes
-    const taskCheckboxes = document.querySelectorAll('.task-item input[type="checkbox"]');
-    
-    // Add event listener to each checkbox
-    taskCheckboxes.forEach(checkbox => {
-      checkbox.addEventListener('change', function() {
-        const taskId = this.dataset.taskId;
-        const taskItem = this.closest('.task-item');
-        const taskTitle = taskItem.querySelector('h3');
-        
-        if (this.checked) {
-          // Handle task completion
-          markTaskAsCompleted(taskId, taskItem, taskTitle);
-        } else {
-          // Handle task uncompleting
-          confirmUncompleteTask(taskId, taskItem, taskTitle, this);
-        }
-      });
-    });
-    
-    // Setup the share task modal
+    // ✅ SHARE TASK MODAL LOGIC
     const shareButtons = document.querySelectorAll('.share-task');
     const shareModal = document.getElementById('shareModal');
     const shareForm = document.getElementById('shareForm');
     const cancelShareButton = document.getElementById('cancelShare');
     const shareTaskIdField = document.getElementById('shareTaskId');
-    
-    // Show modal when share button is clicked
+
     shareButtons.forEach(button => {
-      button.addEventListener('click', function(e) {
-        e.preventDefault();
-        const taskId = this.dataset.taskId;
-        shareTaskIdField.value = taskId;
-        shareModal.classList.remove('hidden');
-      });
+        button.addEventListener('click', function(e) {
+            e.preventDefault();
+            const taskId = this.dataset.taskId;
+            shareTaskIdField.value = taskId;
+            shareModal.classList.remove('hidden');
+        });
     });
-    
-    // Hide modal when cancel is clicked
+
     cancelShareButton.addEventListener('click', function() {
-      shareModal.classList.add('hidden');
-      shareForm.reset();
+        shareModal.classList.add('hidden');
+        shareForm.reset();
     });
-    
-    // Handle form submission
+
     shareForm.addEventListener('submit', function(e) {
-      e.preventDefault();
-      
-      const taskId = shareTaskIdField.value;
-      const username = document.getElementById('username').value;
-      const canEdit = document.querySelector('input[name="can_edit"]').checked;
-      
-      // Send share request via AJAX
-      fetch('/task/share', {
+        e.preventDefault();
+
+        const taskId = shareTaskIdField.value;
+        const username = document.getElementById('username').value;
+        const canEdit = document.querySelector('input[name="can_edit"]').checked;
+
+        fetch('/task/share', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                taskId: taskId,
+                username: username,
+                canEdit: canEdit
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showNotification(data.message, 'success');
+                shareModal.classList.add('hidden');
+                shareForm.reset();
+            } else {
+                showNotification(data.message, 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showNotification('Error sharing task', 'error');
+        });
+    });
+});
+
+// ✅ MARK TASK AS COMPLETED
+function markTaskAsCompleted(taskId, taskItem, taskTitle) {
+    fetch(`/task/complete/${taskId}`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          taskId: taskId,
-          username: username,
-          canEdit: canEdit
-        })
-      })
-      .then(response => response.json())
-      .then(data => {
-        if (data.success) {
-          // Show success message
-          showNotification(data.message, 'success');
-          // Close the modal
-          shareModal.classList.add('hidden');
-          shareForm.reset();
-        } else {
-          // Show error message
-          showNotification(data.message, 'error');
+            'Content-Type': 'application/json',
         }
-      })
-      .catch(error => {
+    })
+    .then(response => {
+        if (response.ok) {
+            taskItem.classList.add('bg-gray-700/50');
+            taskItem.classList.remove('bg-gray-700');
+            taskTitle.classList.add('line-through', 'text-gray-400');
+            showNotification('Task marked as completed!', 'success');
+        } else {
+            throw new Error('Failed to update task');
+        }
+    })
+    .catch(error => {
         console.error('Error:', error);
-        showNotification('Error sharing task', 'error');
-      });
+        showNotification('Error updating task', 'error');
     });
-  });
-  
-  // Helper function to show notifications
-  function showNotification(message, type) {
-    // Create a notification element
+}
+
+// ✅ UNCOMPLETE TASK
+function confirmUncompleteTask(taskId, taskItem, taskTitle, checkbox) {
+    if (confirm('Are you sure you want to mark this task as not completed?')) {
+        fetch(`/task/uncomplete/${taskId}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => {
+            if (response.ok) {
+                taskItem.classList.remove('bg-gray-700/50');
+                taskItem.classList.add('bg-gray-700');
+                taskTitle.classList.remove('line-through', 'text-gray-400');
+                showNotification('Task marked as not completed', 'success');
+            } else {
+                checkbox.checked = true;
+                throw new Error('Failed to update task');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showNotification('Error updating task', 'error');
+            checkbox.checked = true;
+        });
+    } else {
+        checkbox.checked = true;
+    }
+}
+
+// ✅ NOTIFICATION
+function showNotification(message, type) {
     const notification = document.createElement('div');
     notification.className = `fixed bottom-4 right-4 px-6 py-3 rounded-md text-white ${type === 'success' ? 'bg-green-500' : 'bg-red-500'} shadow-lg transition-opacity duration-500`;
     notification.textContent = message;
-    
-    // Add to DOM
     document.body.appendChild(notification);
-    
-    // Remove after a delay
+
     setTimeout(() => {
-      notification.style.opacity = '0';
-      setTimeout(() => {
-        document.body.removeChild(notification);
-      }, 500);
+        notification.style.opacity = '0';
+        setTimeout(() => {
+            document.body.removeChild(notification);
+        }, 500);
     }, 3000);
-  }
+}
 </script>
 {% endblock %}
